@@ -11,6 +11,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: kube-event-logger
+  namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
@@ -23,16 +24,34 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: kube-event-logger
+    namespace: kube-system
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: kube-event-logger
+  namespace: kube-system
+  labels:
+    app: kube-event-logger
 spec:
-  containers:
-  - image: marcusnoble/kube-event-logger:latest
-    imagePullPolicy: Always
-    name: kube-event-logger
-  restartPolicy: Always
-  serviceAccountName: kube-event-logger
----
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kube-event-logger
+  template:
+    metadata:
+      labels:
+        app: kube-event-logger
+    spec:
+      containers:
+      - name: kube-event-logger
+        image: marcusnoble/kube-event-logger:latest
+        resources:
+          requests:
+            memory: "5Mi"
+            cpu: "100m"
+          limits:
+            memory: "50Mi"
+            cpu: "200m"
+      restartPolicy: Always
+      serviceAccountName: kube-event-logger
