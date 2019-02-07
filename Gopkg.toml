@@ -1,0 +1,11 @@
+[[constraint]]
+  branch = "master"
+  name = "k8s.io/api"
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.14.0-alpha.2"
+
+[prune]
+  go-tests = true
+  unused-packages = true

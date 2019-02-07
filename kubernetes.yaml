@@ -1,0 +1,38 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kube-event-logger
+rules:
+- apiGroups: [""]
+  resources: ["pods", "replicationcontrollers"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-event-logger
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-event-logger
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-event-logger
+subjects:
+  - kind: ServiceAccount
+    name: kube-event-logger
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-event-logger
+spec:
+  containers:
+  - image: marcusnoble/kube-event-logger:latest
+    imagePullPolicy: Always
+    name: kube-event-logger
+  restartPolicy: Always
+  serviceAccountName: kube-event-logger
+---
