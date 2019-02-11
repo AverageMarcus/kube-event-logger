@@ -2,15 +2,9 @@
 
 Capture Kubernetes events and log them out to stdout so they can be picked up by a central log collector.
 
-## TODO
+## Usage
 
-- [ ] Support more resource types (currently only pods)
-- [ ] Allow for configuration
-- [x] Add out of cluster support
-
-## Usage
-
-### Out-of-cluster
+### Out-of-cluster
 
 ```
 go build main.go -o kube-event-logger
@@ -23,3 +17,7 @@ Apply the provided kubernetes manifest:
 ```
 kubectl apply -f ./kubernetes.yaml
 ```
+
+## Config
+
+Take a look at [.kube-event-logger.yaml](.kube-event-logger.yaml) for the possible configuration. If no configuration is found, or configuration fails to load the application will only report on pods across all namespaces by default.
