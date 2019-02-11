@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -32,11 +33,17 @@ const maxRetries = 5
 var serverStartTime time.Time
 
 func Start() {
+	var kubeClient kubernetes.Interface
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		panic(err)
+		kubeconfigPath := os.Getenv("KUBECONFIG")
+		if kubeconfigPath == "" {
+			kubeconfigPath = os.Getenv("HOME") + "/.kube/config"
+		}
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	}
-	kubeClient, err := kubernetes.NewForConfig(config)
+	kubeClient, err = kubernetes.NewForConfig(config)
+
 	if err != nil {
 		panic(err)
 	}
