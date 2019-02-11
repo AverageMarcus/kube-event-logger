@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -27,20 +28,27 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
+	config := &Config{
+		Namespace: "",
+		Resource: Resource{
+			Pod: true,
+		},
+	}
+
 	file, err := os.Open(".kube-event-logger.yaml")
 	if err != nil {
-		panic(err)
+		fmt.Println("No config found, continuing with default")
+		return config
 	}
 
 	b, err := ioutil.ReadAll(file)
 	if err != nil {
-		panic(err)
+		fmt.Println("Failed to read config, continuing with default")
+		return config
 	}
 
-	config := &Config{}
 	if len(b) != 0 {
 		yaml.Unmarshal(b, config)
-		return config
 	}
 
 	return config
