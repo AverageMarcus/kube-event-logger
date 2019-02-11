@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/marcusnoble/kube-event-logger/pkg/config"
 	"github.com/marcusnoble/kube-event-logger/pkg/event"
 	"github.com/marcusnoble/kube-event-logger/pkg/handler"
 	"github.com/marcusnoble/kube-event-logger/pkg/logger"
@@ -30,16 +31,18 @@ const maxRetries = 5
 var serverStartTime time.Time
 
 func Start() {
+	config := config.LoadConfig()
+
 	var kubeClient kubernetes.Interface
-	config, err := rest.InClusterConfig()
+	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
 		kubeconfigPath := os.Getenv("KUBECONFIG")
 		if kubeconfigPath == "" {
 			kubeconfigPath = os.Getenv("HOME") + "/.kube/config"
 		}
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+		kubeConfig, err = clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	}
-	kubeClient, err = kubernetes.NewForConfig(config)
+	kubeClient, err = kubernetes.NewForConfig(kubeConfig)
 
 	if err != nil {
 		panic(err)
@@ -47,40 +50,42 @@ func Start() {
 
 	informers := []cache.SharedIndexInformer{}
 
-	informers = append(informers, handler.WatchPods(kubeClient))
-	informers = append(informers, handler.WatchDeployments(kubeClient))
-	informers = append(informers, handler.WatchReplicaSets(kubeClient))
-	informers = append(informers, handler.WatchJobs(kubeClient))
-	informers = append(informers, handler.WatchNamespaces(kubeClient))
-	informers = append(informers, handler.WatchIngresses(kubeClient))
-	informers = append(informers, handler.WatchPersistentVolumes(kubeClient))
-	informers = append(informers, handler.WatchReplicationControllers(kubeClient))
-	informers = append(informers, handler.WatchServices(kubeClient))
-	informers = append(informers, handler.WatchSecrets(kubeClient))
-	informers = append(informers, handler.WatchConfigMaps(kubeClient))
+	informers = append(informers, handler.WatchPods(kubeClient, config))
+	informers = append(informers, handler.WatchDeployments(kubeClient, config))
+	informers = append(informers, handler.WatchReplicaSets(kubeClient, config))
+	informers = append(informers, handler.WatchJobs(kubeClient, config))
+	informers = append(informers, handler.WatchNamespaces(kubeClient, config))
+	informers = append(informers, handler.WatchIngresses(kubeClient, config))
+	informers = append(informers, handler.WatchPersistentVolumes(kubeClient, config))
+	informers = append(informers, handler.WatchReplicationControllers(kubeClient, config))
+	informers = append(informers, handler.WatchServices(kubeClient, config))
+	informers = append(informers, handler.WatchSecrets(kubeClient, config))
+	informers = append(informers, handler.WatchConfigMaps(kubeClient, config))
 
 	for _, informer := range informers {
-		queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
-		informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				queue.Add(event.New(obj, "created"))
-			},
-			UpdateFunc: func(old, new interface{}) {
-				queue.Add(event.New(new, "updated"))
-			},
-			DeleteFunc: func(obj interface{}) {
-				queue.Add(event.New(obj, "deleted"))
-			},
-		})
-		c := &Controller{
-			kubeClient: kubeClient,
-			informer:   informer,
-			queue:      queue,
-		}
+		if informer != nil {
+			queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+			informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					queue.Add(event.New(obj, "created"))
+				},
+				UpdateFunc: func(old, new interface{}) {
+					queue.Add(event.New(new, "updated"))
+				},
+				DeleteFunc: func(obj interface{}) {
+					queue.Add(event.New(obj, "deleted"))
+				},
+			})
+			c := &Controller{
+				kubeClient: kubeClient,
+				informer:   informer,
+				queue:      queue,
+			}
 
-		stopCh := make(chan struct{})
-		defer close(stopCh)
-		go c.Run(stopCh)
+			stopCh := make(chan struct{})
+			defer close(stopCh)
+			go c.Run(stopCh)
+		}
 	}
 
 	sigterm := make(chan os.Signal, 1)

@@ -1,10 +1,32 @@
+apiVersion: v1
+data:
+  .kube-event-logger.yaml: |
+    namespace: "" # empty string for all namespaces
+    resource:
+      pod: true
+      deployment: true
+      configMap: false
+      ingress: true
+      job: false
+      namespace: false
+      persistentVolume: false
+      replicaSet: false
+      replicationController: false
+      secret: false
+      service: true
+
+kind: ConfigMap
+metadata:
+  name: kube-event-logger
+  namespace: kube-system
+---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kube-event-logger
 rules:
 - apiGroups: [""]
-  resources: ["pods", "replicationcontrollers"]
+  resources: ["pods", "deployments", "services", "ingresses.extensions"]
   verbs: ["get", "watch", "list"]
 ---
 apiVersion: v1
@@ -45,7 +67,7 @@ spec:
     spec:
       containers:
       - name: kube-event-logger
-        image: marcusnoble/kube-event-logger:latest
+        image: kube-system/kube-event-logger:latest
         resources:
           requests:
             memory: "5Mi"
@@ -53,5 +75,13 @@ spec:
           limits:
             memory: "50Mi"
             cpu: "200m"
+        volumeMounts:
+        - name: config-volume
+          mountPath: /bin/.kube-event-logger.yaml
+          subPath: .kube-event-logger.yaml
+      volumes:
+        - name: config-volume
+          configMap:
+            name: kube-event-logger
       restartPolicy: Always
       serviceAccountName: kube-event-logger

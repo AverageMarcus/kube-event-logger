@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/marcusnoble/kube-event-logger/pkg/config"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -9,7 +10,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-func WatchPersistentVolumes(kubeClient kubernetes.Interface) cache.SharedIndexInformer {
+func WatchPersistentVolumes(kubeClient kubernetes.Interface, config *config.Config) cache.SharedIndexInformer {
+	if !config.Resource.PersistentVolume {
+		return nil
+	}
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {

@@ -1,0 +1,13 @@
+namespace: "" # empty string for all namespaces
+resource:
+  pod: true
+  deployment: true
+  configMap: false
+  ingress: true
+  job: true
+  namespace: true
+  persistentVolume: false
+  replicaSet: false
+  replicationController: false
+  secret: false
+  service: true
