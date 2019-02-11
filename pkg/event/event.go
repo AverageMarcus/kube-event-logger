@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/marcusnoble/kube-event-logger/pkg/utils"
-	apps_v1beta1 "k8s.io/api/apps/v1beta1"
+	apps_v1 "k8s.io/api/apps/v1"
 	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	ext_v1beta1 "k8s.io/api/extensions/v1beta1"
@@ -33,7 +33,7 @@ func New(obj interface{}, action string) Event {
 	switch object := obj.(type) {
 	case *ext_v1beta1.DaemonSet:
 		kubeEvent.Kind = "daemon set"
-	case *apps_v1beta1.Deployment:
+	case *apps_v1.Deployment:
 		kubeEvent.Kind = "deployment"
 	case *batch_v1.Job:
 		kubeEvent.Kind = "job"
@@ -52,7 +52,7 @@ func New(obj interface{}, action string) Event {
 		}
 	case *api_v1.ReplicationController:
 		kubeEvent.Kind = "replication controller"
-	case *ext_v1beta1.ReplicaSet:
+	case *apps_v1.ReplicaSet:
 		kubeEvent.Kind = "replica set"
 	case *api_v1.Service:
 		kubeEvent.Kind = "service"
